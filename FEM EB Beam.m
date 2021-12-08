@@ -144,10 +144,10 @@ for i=1:length(freqc)
     mod=[mod,v];
 end
 
+
+%%% Mode Shapes %%%
+
 number_of_mode_shapes=15; %% Number of modes which are requested
-
-
-
 
 
 %%%%%%%   Clamped-Clamped Boundary Condition   %%%%%%%%%
