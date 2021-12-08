@@ -297,9 +297,10 @@ end
 
 
 %%% Frequency Response Function %%%
+%% i and j must not be higher than number of active degree of freedom
 
-i=140; %% Measured point
-j=400; %% Excitation point
+i=10; %% Measured point
+j=40; %% Excitation point
 frf_modal=0;
 for k=1:length(freqc)
 frf_modal=mod(i,k)*mod(j,k)/(-w^2+nat_freq(k,k))+frf_modal;
