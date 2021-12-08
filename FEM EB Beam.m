@@ -3,6 +3,7 @@ clear
 tic
 syms A11 B11 D11 I0 I1 I2 x L E A z w real 
 
+%%% Shape Functions %%%
 N1=1-x/L;
 N2=x/L;
 N3=1-3*x^2/L^2+2*x^3/L^3;
@@ -17,13 +18,13 @@ M11=I0*int(N_u'*N_u,x,[0,L]);
 M12=-I1*int(N_u'*diff(N_w,x),x,[0,L]);
 M21=-I1*int(diff(N_w',x)*N_u,x,[0,L]);
 M22=I0*int(N_w'*N_w,[0,L])+I2*int(diff(N_w',x)*diff(N_w,x),x,[0,L]);
-M=[M11 M12;M21 M22];
+M=[M11 M12;M21 M22]; %% Local mass matrix (symbolic)
 
 K11=A11*int(diff(N_u',x)*diff(N_u,x),x,[0,L]);
 K12=-B11*int(diff(N_u',x)*diff(N_w,x,x),x,[0,L]);
 K21=-B11*int(diff(N_w',x,x)*diff(N_u,x),x,[0,L]);
 K22=D11*int(diff(N_w',x,x)*diff(N_w,x,x),x,[0,L]);
-K=[K11 K12;K21 K22];
+K=[K11 K12;K21 K22]; %% Local stiffness matrix (symbolic)
 
 
 K([1 2 3 4 5 6],[1 2 3 4 5 6])=K([1 3 4 2 5 6],[1 3 4 2 5 6]);
@@ -79,17 +80,17 @@ R=[A11_numeric,B11_numeric,D11_numeric]; %% Coefficinet of Stress Resultants
 
 nel=40;  %%Number of Divided Elements
 
-mm=double(subs(M,{A11,B11,D11,I0,I1,I2,L},{R(1),R(2),R(3),I(1),I(2),I(3),l/nel}));
-kk=double(subs(K,{A11,B11,D11,I0,I1,I2,L},{R(1),R(2),R(3),I(1),I(2),I(3),l/nel}));
+mm=double(subs(M,{A11,B11,D11,I0,I1,I2,L},{R(1),R(2),R(3),I(1),I(2),I(3),l/nel})); %% Local mass matrix
+kk=double(subs(K,{A11,B11,D11,I0,I1,I2,L},{R(1),R(2),R(3),I(1),I(2),I(3),l/nel})); %% Local stiffness matrix
 
 n_nodes=nel+1;  %%Node Number
 Dof=3;  %%Degree of Freedom of a Node
 
 %%% Boundary Conditions %%%
-BCs=[1,2,3,n_nodes*Dof-2,n_nodes*Dof-1,n_nodes*Dof]; % C-C
-%BCs=[1,2,n_nodes*Dof-2,n_nodes*Dof-1]; % S-S
-%BCs=[1,2,3,n_nodes*Dof-2,n_nodes*Dof-1]; %C-S
-%BCs=[1,2,3]; % C-F
+BCs=[1,2,3,n_nodes*Dof-2,n_nodes*Dof-1,n_nodes*Dof]; % Clamped-Clamped
+%BCs=[1,2,n_nodes*Dof-2,n_nodes*Dof-1]; % Simply Supported-Simply Supported
+%BCs=[1,2,3,n_nodes*Dof-2,n_nodes*Dof-1]; %Clamped-Supported
+%BCs=[1,2,3]; % Clamped-Free
 
 
 
@@ -100,6 +101,9 @@ Mglob=zeros(Dof*n_nodes,Dof*n_nodes)  ;
 for i=1:nel
     top(i,:)=[3*i-2 3*i-1 3*i 3*i+1 3*i+2 3*i+3]; %% Topology Matrix
 end
+
+
+%%% Assembly Process %%%
 
 for n=1:nel
     for i=1:6
@@ -119,21 +123,20 @@ for n=1:nel
     end
 end
 
-activeDof=setdiff(1:Dof*n_nodes',BCs);
+activeDof=setdiff(1:Dof*n_nodes',BCs); %% Rows and columns are omitted which are boundary conditions
 
 Kglobactive=Kglob(activeDof,activeDof);
 Mglobactive=Mglob(activeDof,activeDof);
 
-%System_Matrix=(inv(Mglobactive)*Kglobactive);
-[vectorc,freqc]=eig(Kglobactive,Mglobactive);
+[vectorc,freqc]=eig(Kglobactive,Mglobactive); %% Eigenvalue problem
 nat_freq=freqc;
 freqc=diag(freqc);
-freqc=sort(sqrt(freqc))
+freqc=sort(sqrt(freqc)) %% Natural Frequncies
 
-disp=linspace(0,l,n_nodes);
-[freqc(1),freqc(2),freqc(3),freqc(4),freqc(5)];
-%[freqc(1),freqc(2),freqc(3),freqc(4),freqc(5)]*l^2/h*sqrt(rho_metallic/E_metallic);
-%{
+disp=linspace(0,l,n_nodes);  %% Displacement along x-direction
+
+%%% Mass normalisation of mass and stiffness matrices %%%
+
 mod=[];
 for i=1:length(freqc)
     v=vectorc(:,i)/norm(vectorc(:,i));
@@ -141,7 +144,7 @@ for i=1:length(freqc)
     mod=[mod,v];
 end
 
-number_of_mode_shapes=15;
+number_of_mode_shapes=15; %% Number of modes which are requested
 
 
 
@@ -181,7 +184,7 @@ end
 
 
 
-
+%{
 
 
 
@@ -280,7 +283,7 @@ figure
 subplot(2,1,1)
 plot(disp,u_mod(:,i))
 grid on
-title('Clamped-Simpþy Supported')
+title('Clamped-SimpÃ¾y Supported')
 xlabel('x')
 ylabel('u')
 subplot(2,1,2)
@@ -289,21 +292,19 @@ grid on
 xlabel('x')
 ylabel('w')
 end
+%}
 
 
 
+%%% Frequency Response Function %%%
 
-
-i=140;
-j=400;
+i=140; %% Measured point
+j=400; %% Excitation point
 frf_modal=0;
 for k=1:length(freqc)
 frf_modal=mod(i,k)*mod(j,k)/(-w^2+nat_freq(k,k))+frf_modal;
 end
 
-
-%}
-%{
 frequency=0:5:freqc(10)+10000;
 figure
 plot(frequency,20*log(double(subs(frf_modal,frequency))))
@@ -311,5 +312,5 @@ title('Receptance')
 xlabel('Frequency')
 ylabel('Amplitude (dB)')
 grid on
-%}
+
 toc
