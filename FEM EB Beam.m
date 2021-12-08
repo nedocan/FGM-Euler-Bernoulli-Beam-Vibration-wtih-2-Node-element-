@@ -135,7 +135,7 @@ freqc=sort(sqrt(freqc)) %% Natural Frequncies
 
 disp=linspace(0,l,n_nodes);  %% Displacement along x-direction
 
-%%% Mass normalisation of mass and stiffness matrices %%%
+%%% Mass normalisation of modes %%%
 
 mod=[];
 for i=1:length(freqc)
